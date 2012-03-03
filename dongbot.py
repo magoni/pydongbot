@@ -12,7 +12,7 @@ class IRCBot:
                  server=SERVER,
                  channels=[]):
         self.nick = nick
-        
+
         if user:
             self.user = user
         else:
@@ -35,16 +35,14 @@ class IRCBot:
             message = self.s.recv(1024)
             print message
             if re.search("(.*)End of /MOTD command(.*)", message):
-				break
+                break
 
         # identifying will happen eventually 
-
         for i in self.channels:
-            self.s.send('JOIN ' + i)
+            self.s.send('JOIN ' + i + '\r\n')
             print 'joined ' + i
 
         # main loop
-
         while 1:
             packet = self.s.recv(1024)
             packet.replace('\n\r', '\r\n')
@@ -57,7 +55,7 @@ class IRCBot:
         if message.startswith('PING :'):
             server = message[len('PING'):]
             self.s.send('PONG%s\r\n' % (server,))
-    
+
     def send_message(self, channel, message):
         self.s.send('PRIVMSG %s :%s\r\n' % (channel, message))
 
@@ -68,4 +66,6 @@ class IRCBot:
         self.s.send('QUIT :%s\r\n' % (message,))
         self.s.close()
 
-bot = IRCBot("pydongbot", 'lol', SERVER, ['#dongtest'])
+if "__main__" == __name__:
+    bot = IRCBot("pydongbot", 'lol', SERVER, ['#dongtest'])
+    bot.start()
