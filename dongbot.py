@@ -1,16 +1,16 @@
 import socket
 import threading
+import re
 
 IRC_PORT = 6667
 SERVER = 'esm41.com'
-BANNER_END = '' # the last packet in the server's welcome banner
 
 class IRCBot:
     def __init__(self,
                  nick="mybot",
                  user='',
                  server=SERVER,
-                 channels=[])
+                 channels=[]):
         self.nick = nick
         
         if user:
@@ -25,7 +25,7 @@ class IRCBot:
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def start(self):
-        self.s.connect(self.server, IRC_PORT)
+        self.s.connect((self.server, IRC_PORT))
         self.s.send('NICK %s\r\n' % (self.nick,))
         self.s.send('USER %s %s %s :%s\r\n' % (self.user,
                                                self.host,
@@ -34,13 +34,14 @@ class IRCBot:
         while 1:
             message = self.s.recv(1024)
             print message
-            if message == BANNER_END:
-                break
+            if re.search("(.*)End of /MOTD command(.*)", message):
+				break
 
-        # at this point, you need to do your identifying and shit
+        # identifying will happen eventually 
 
-        for c in self.channels:
-            self.s.send('JOIN ' + c + '\r\n')
+        for i in self.channels:
+            self.s.send('JOIN ' + i)
+            print 'joined ' + i
 
         # main loop
 
@@ -66,3 +67,5 @@ class IRCBot:
     def irc_quit(self, message):
         self.s.send('QUIT :%s\r\n' % (message,))
         self.s.close()
+
+bot = IRCBot("pydongbot", 'lol', SERVER, ['#dongtest'])
