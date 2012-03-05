@@ -6,10 +6,10 @@ import os.path
 
 IRC_PORT = 6667
 SERVER = 'esm41.com'
-REMEMBER_OBJ = re.compile(r"remember:(.*)->(.*)")
-FORGET_OBJ = re.compile(r"forget:(.*)")
-CHAN_MESSAGE = re.compile(r"PRIVMSG #(\w+) :(.*)")
 REMEMBER_BACKUP = "remember_dict.bkp"
+REMEMBER_OBJ = re.compile(r"!remember (.*)>(.*)")
+FORGET_OBJ = re.compile(r"!forget (.*)")
+CHAN_MESSAGE = re.compile(r":(\w+)!.*PRIVMSG #(\w+) :(.*)")
 
 class IRCBot:
     def __init__(self,
@@ -18,7 +18,7 @@ class IRCBot:
                  server=SERVER,
                  channels=[]):
         self.nick = nick
-
+        self.logging = False
         if user:
             self.user = user
         else:
@@ -27,13 +27,13 @@ class IRCBot:
         self.host = socket.gethostname()
         self.server = server
         self.channels = channels
-
         # load the backup of remembered words if it exists
         if os.path.isfile(REMEMBER_BACKUP):
             self.remembered = pickle.load(open(REMEMBER_BACKUP, 'rb'))
         else:
             self.remembered = {}
 
+        self.logs = []
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def start(self):
@@ -67,13 +67,66 @@ class IRCBot:
         chan_message = CHAN_MESSAGE.search(message)
         if message.startswith('PING :'):
             server = message[len('PING'):]
-            self.s.send('PONG%s\r\n' % (server,))
+            pong_str = 'PONG%s\r\n' % (server,)
+            print pong_str
+            self.s.send(pong_str)
         elif chan_message:
             #this should end up being refactored at some point in time
-            channel = chan_message.groups()[0]
-            msg = chan_message.groups()[1]
+            speaker = chan_message.groups()[0]
+            channel = chan_message.groups()[1]
+            msg = chan_message.groups()[2].strip()
+            if self.logging:
+                self.logs.append((speaker, msg))
             rem_object = REMEMBER_OBJ.search(msg)
             for_object = FORGET_OBJ.search(msg)
+
+            if msg == "!log":
+                self.send_action("#" + channel, "started recording logs")
+                self.logging = True
+            elif msg == "!pauselog":
+                self.send_action("#" + channel, "paused recording logs")
+                self.logging = False
+            elif msg == "!history":
+                for (cur_nick, cur_msg) in self.logs:
+                    self.send_message("#" + channel, "%s: %s" % (cur_nick, cur_msg))
+            elif msg.startswith("!histlast"):
+                try:
+                    x = int(msg[len("!histlast"):])
+                    print(x)
+                    for (cur_nick, cur_msg) in self.logs[-x:]:
+                        self.send_message("#" + channel, "%s: %s" % (cur_nick, cur_msg))
+                except:
+                    pass
+            elif msg == "!destroylog":
+                self.send_action("#" + channel, "destroyed old logs")
+                self.logs = []
+            elif msg == "!help":
+                self.send_message("#" + channel, "!remember:KEY>VALUE")
+                self.send_message("#" + channel, "!forget:KEY")
+                self.send_message("#" + channel, "!history")
+                self.send_message("#" + channel, "!histlast NUM")
+                self.send_message("#" + channel, "!log")
+                self.send_message("#" + channel, "!pauselog")
+                self.send_message("#" + channel, "!destroylog")
+                self.send_message("#" + channel, "!help")
+                self.send_message("#" + channel, "!help COMMAND")
+            elif msg.startswith('!help'):
+                commands = {"remember":"remembers a KEY so that whenever it is said, VALUE is replied.",
+                            "forget":"forgets a KEY that had been remembered.",
+                            "history":"displays recorded history",
+                            "histlast":"displays last NUM recorded messages",
+                            "log":"starts logging messages",
+                            "pauselog":"pauses the logging of messages",
+                            "destroylog":"destroys all logs of messages",
+                            "help":"gives help"}
+                cmd = msg[5:].strip()
+                if cmd[0] == "!":
+                    cmd = cmd[1:]
+                if cmd in commands:
+                    self.send_message("#" + channel, commands[cmd])
+                else:
+                    self.send_message("#" + channel, "Not a valid command.")
+
             if rem_object:
                 groups = rem_object.groups()
                 self.remembered[groups[0].strip()] = groups[1].strip()
