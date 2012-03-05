@@ -1,13 +1,15 @@
 import socket
 import threading
 import re
+import pickle
+import os.path
 
 IRC_PORT = 6667
 SERVER = 'esm41.com'
 REMEMBER_OBJ = re.compile(r"remember:(.*)->(.*)")
 FORGET_OBJ = re.compile(r"forget:(.*)")
 CHAN_MESSAGE = re.compile(r"PRIVMSG #(\w+) :(.*)")
-remembered = {}
+REMEMBER_BACKUP = "remember_dict.bkp"
 
 class IRCBot:
     def __init__(self,
@@ -25,6 +27,12 @@ class IRCBot:
         self.host = socket.gethostname()
         self.server = server
         self.channels = channels
+
+        # load the backup of remembered words if it exists
+        if os.path.isfile(REMEMBER_BACKUP):
+            self.remembered = pickle.load(open(REMEMBER_BACKUP, 'rb'))
+        else:
+            self.remembered = {}
 
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -68,18 +76,22 @@ class IRCBot:
             for_object = FORGET_OBJ.search(msg)
             if rem_object:
                 groups = rem_object.groups()
-                remembered[groups[0].strip()] = groups[1].strip()
+                self.remembered[groups[0].strip()] = groups[1].strip()
+                # backup when word is added
+                pickle.dump(self.remembered, open(REMEMBER_BACKUP, 'wb'))
                 self.send_action("#" + channel, "remembered \"%s\"" %
                              (groups[0].strip(),))
             elif for_object:
                 groups = for_object.groups()
-                remembered.pop(groups[0].strip())
+                self.remembered.pop(groups[0].strip())
+                # back up when word is removed
+                pickle.dump(self.remembered, open(REMEMBER_BACKUP, 'wb'))
                 self.send_action("#" + channel, "forgot \"%s\"" %
                              (groups[0].strip(),))
             else:
-                for key in remembered:
+                for key in self.remembered:
                     if msg.find(key) != -1:
-                        self.send_message("#" + channel, remembered[key])
+                        self.send_message("#" + channel, self.remembered[key])
 
     def send_message(self, channel, message):
         self.s.send('PRIVMSG %s :%s\r\n' % (channel, message))
