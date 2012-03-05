@@ -109,6 +109,23 @@ class IRCBot:
                 self.send_message("#" + channel, "!pauselog")
                 self.send_message("#" + channel, "!destroylog")
                 self.send_message("#" + channel, "!help")
+                self.send_message("#" + channel, "!help COMMAND")
+            elif msg.startswith('!help'):
+                commands = {"remember":"remembers a KEY so that whenever it is said, VALUE is replied.",
+                            "forget":"forgets a KEY that had been remembered.",
+                            "history":"displays recorded history",
+                            "histlast":"displays last NUM recorded messages",
+                            "log":"starts logging messages",
+                            "pauselog":"pauses the logging of messages",
+                            "destroylog":"destroys all logs of messages",
+                            "help":"gives help"}
+                cmd = msg[5:].strip()
+                if cmd[0] == "!":
+                    cmd = cmd[1:]
+                if cmd in commands:
+                    self.send_message("#" + channel, commands[cmd])
+                else:
+                    self.send_message("#" + channel, "Not a valid command.")
 
             if rem_object:
                 groups = rem_object.groups()
