@@ -4,6 +4,10 @@ import re
 
 IRC_PORT = 6667
 SERVER = 'esm41.com'
+REMEMBER_OBJ = re.compile(r"remember:(.*)->(.*)")
+FORGET_OBJ = re.compile(r"forget:(.*)")
+CHAN_MESSAGE = re.compile(r"PRIVMSG #(\w+) :(.*)")
+remembered = {}
 
 class IRCBot:
     def __init__(self,
@@ -52,9 +56,30 @@ class IRCBot:
 
     def handle(self, message):
         print message
+        chan_message = CHAN_MESSAGE.search(message)
         if message.startswith('PING :'):
             server = message[len('PING'):]
             self.s.send('PONG%s\r\n' % (server,))
+        elif chan_message:
+            #this should end up being refactored at some point in time
+            channel = chan_message.groups()[0]
+            msg = chan_message.groups()[1]
+            rem_object = REMEMBER_OBJ.search(msg)
+            for_object = FORGET_OBJ.search(msg)
+            if rem_object:
+                groups = rem_object.groups()
+                remembered[groups[0].strip()] = groups[1].strip()
+                self.send_action("#" + channel, "remembered \"%s\"" %
+                             (groups[0].strip(),))
+            elif for_object:
+                groups = for_object.groups()
+                remembered.pop(groups[0].strip())
+                self.send_action("#" + channel, "forgot \"%s\"" %
+                             (groups[0].strip(),))
+            else:
+                for key in remembered:
+                    if msg.find(key) != -1:
+                        self.send_message("#" + channel, remembered[key])
 
     def send_message(self, channel, message):
         self.s.send('PRIVMSG %s :%s\r\n' % (channel, message))
@@ -67,5 +92,6 @@ class IRCBot:
         self.s.close()
 
 if "__main__" == __name__:
+
     bot = IRCBot("pydongbot", 'lol', SERVER, ['#dongtest'])
     bot.start()
