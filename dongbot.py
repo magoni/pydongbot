@@ -43,6 +43,15 @@ class IRCBot:
                                                self.host,
                                                self.server,
                                                self.user))
+        # temporary: import old words from TCL dongbot
+        #f = open('old-triggers', 'r')
+        #for line in f:
+        #     wordlist = line.split('::')
+        #     key = wordlist[0]
+        #     val = wordlist[1].strip()
+        #     self.remembered[key] = val
+        #self.send_message("#main", "imported old words.")
+
         while 1:
             message = self.s.recv(1024)
             print message
@@ -110,6 +119,9 @@ class IRCBot:
                 self.send_message("#" + channel, "!destroylog")
                 self.send_message("#" + channel, "!help")
                 self.send_message("#" + channel, "!help COMMAND")
+            #elif msg=="!backup":
+            #    pickle.dump(self.remembered, open(REMEMBER_BACKUP, 'wb'))
+            #    self.send_message("#" + channel, "words backed up.")
             elif msg.startswith('!help'):
                 commands = {"remember":"remembers a KEY so that whenever it is said, VALUE is replied.",
                             "forget":"forgets a KEY that had been remembered.",
@@ -143,7 +155,7 @@ class IRCBot:
                              (groups[0].strip(),))
             else:
                 for key in self.remembered:
-                    if msg.find(key) != -1:
+                    if re.search('\\b' + re.escape(key) + '\\b', msg):
                         self.send_message("#" + channel, self.remembered[key])
 
     def send_message(self, channel, message):
@@ -158,5 +170,5 @@ class IRCBot:
 
 if "__main__" == __name__:
 
-    bot = IRCBot("pydongbot", 'lol', SERVER, ['#dongtest'])
+    bot = IRCBot("dongbot5000", 'lol', SERVER, ['#main'])
     bot.start()
