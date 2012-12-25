@@ -95,9 +95,9 @@ class IRCBot:
             elif msg == "!pauselog":
                 self.send_action("#" + channel, "paused recording logs")
                 self.logging = False
-            elif msg == "!history":
-                for (cur_nick, cur_msg) in self.logs:
-                    self.send_message("#" + channel, "%s: %s" % (cur_nick, cur_msg))
+            #elif msg == "!history":
+            #    for (cur_nick, cur_msg) in self.logs:
+            #        self.send_message("#" + channel, "%s: %s" % (cur_nick, cur_msg))
             elif msg.startswith("!histlast"):
                 try:
                     x = int(msg[len("!histlast"):])
@@ -110,9 +110,9 @@ class IRCBot:
                 self.send_action("#" + channel, "destroyed old logs")
                 self.logs = []
             elif msg == "!help":
-                self.send_message("#" + channel, "!remember:KEY>VALUE")
-                self.send_message("#" + channel, "!forget:KEY")
-                self.send_message("#" + channel, "!history")
+                self.send_message("#" + channel, "!remember KEY>VALUE")
+                self.send_message("#" + channel, "!forget KEY")
+               # self.send_message("#" + channel, "!history")
                 self.send_message("#" + channel, "!histlast NUM")
                 self.send_message("#" + channel, "!log")
                 self.send_message("#" + channel, "!pauselog")
