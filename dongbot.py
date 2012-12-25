@@ -3,12 +3,17 @@ import threading
 import re
 import pickle
 import os.path
+import datetime
 
 IRC_PORT = 6667
 SERVER = 'esm41.com'
 REMEMBER_BACKUP = "remember_dict.bkp"
 REMEMBER_OBJ = re.compile(r"!remember (.*)>(.*)")
 FORGET_OBJ = re.compile(r"!forget (.*)")
+SLOG_OBJ = re.compile(r"!slog (.*)")
+DLOG_OBJ = re.compile(r"!dlog (.*)")
+LOG_BASE_URL = "http://esm41.com/irc_logs/"
+LOG_SUFFIX = ".log"
 CHAN_MESSAGE = re.compile(r":(\w+)!.*PRIVMSG #(\w+) :(.*)")
 
 class IRCBot:
@@ -76,24 +81,35 @@ class IRCBot:
             msg = chan_message.groups()[2].strip()
             rem_object = REMEMBER_OBJ.search(msg)
             for_object = FORGET_OBJ.search(msg)
+			slog_object = SLOG_OBJ.search(msg)
+			dlog_object = DLOG_OBJ.search(msg)
 
             if msg == "!help":
                 self.send_message("#" + channel, "!remember KEY>VALUE")
                 self.send_message("#" + channel, "!forget KEY")
-               # self.send_message("#" + channel, "!history")
+                self.send_message("#" + channel, "!slog QUERY")
+                self.send_message("#" + channel, "!dlog MMDDYY")
+                self.send_message("#" + channel, "!tlog, !ylog")
                 self.send_message("#" + channel, "!help")
                 self.send_message("#" + channel, "!help COMMAND")
             #elif msg=="!backup":
             #    pickle.dump(self.remembered, open(REMEMBER_BACKUP, 'wb'))
             #    self.send_message("#" + channel, "words backed up.")
+			elif msg == "!tlog":
+				today = datetime.date.today()
+				url = LOG_BASE_URL + "irc-" + today.strftime('%Y-%m-%d') + LOG_SUFFIX
+				self.send_message("#" + channel, url);
+			elif msg == "!ylog":
+				yesterday = datetime.date.today() - datetime.timedelta(1)
+				url = LOG_BASE_URL + "irc-" + yesterday.strftime('%Y-%m-%d') + LOG_SUFFIX
+				self.send_message("#" + channel, url);
             elif msg.startswith('!help'):
                 commands = {"remember":"remembers a KEY so that whenever it is said, VALUE is replied.",
                             "forget":"forgets a KEY that had been remembered.",
-                            "history":"displays recorded history",
-                            "histlast":"displays last NUM recorded messages",
-                            "log":"starts logging messages",
-                            "pauselog":"pauses the logging of messages",
-                            "destroylog":"destroys all logs of messages",
+							"slog":"searches logs for QUERY, returns URL"
+							"dlog":"returns log on date MMDDYY"
+							"tlog":"returns today's log"
+							"ylog":"returns yesterday's log"
                             "help":"gives help"}
                 cmd = msg[5:].strip()
                 if cmd[0] == "!":
@@ -117,6 +133,14 @@ class IRCBot:
                 pickle.dump(self.remembered, open(REMEMBER_BACKUP, 'wb'))
                 self.send_action("#" + channel, "forgot \"%s\"" %
                              (groups[0].strip(),))
+			elif slog_object:
+				groups = slog_object.groups()
+				query = groups[0].strip()
+				print 'query is ' + query
+			elif dlog_object:
+				groups = dlog_object.groups()
+				datestring = groups[0].strip()
+				print 'datestring is ' + datestring
             else:
                 for key in self.remembered:
                     if re.search('\\b' + re.escape(key) + '\\b', msg):
