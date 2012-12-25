@@ -18,7 +18,6 @@ class IRCBot:
                  server=SERVER,
                  channels=[]):
         self.nick = nick
-        self.logging = False
         if user:
             self.user = user
         else:
@@ -33,7 +32,6 @@ class IRCBot:
         else:
             self.remembered = {}
 
-        self.logs = []
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def start(self):
@@ -43,14 +41,6 @@ class IRCBot:
                                                self.host,
                                                self.server,
                                                self.user))
-        # temporary: import old words from TCL dongbot
-        #f = open('old-triggers', 'r')
-        #for line in f:
-        #     wordlist = line.split('::')
-        #     key = wordlist[0]
-        #     val = wordlist[1].strip()
-        #     self.remembered[key] = val
-        #self.send_message("#main", "imported old words.")
 
         while 1:
             message = self.s.recv(1024)
@@ -84,39 +74,13 @@ class IRCBot:
             speaker = chan_message.groups()[0]
             channel = chan_message.groups()[1]
             msg = chan_message.groups()[2].strip()
-            if self.logging:
-                self.logs.append((speaker, msg))
             rem_object = REMEMBER_OBJ.search(msg)
             for_object = FORGET_OBJ.search(msg)
 
-            if msg == "!log":
-                self.send_action("#" + channel, "started recording logs")
-                self.logging = True
-            elif msg == "!pauselog":
-                self.send_action("#" + channel, "paused recording logs")
-                self.logging = False
-            #elif msg == "!history":
-            #    for (cur_nick, cur_msg) in self.logs:
-            #        self.send_message("#" + channel, "%s: %s" % (cur_nick, cur_msg))
-            elif msg.startswith("!histlast"):
-                try:
-                    x = int(msg[len("!histlast"):])
-                    print(x)
-                    for (cur_nick, cur_msg) in self.logs[-x:]:
-                        self.send_message("#" + channel, "%s: %s" % (cur_nick, cur_msg))
-                except:
-                    pass
-            elif msg == "!destroylog":
-                self.send_action("#" + channel, "destroyed old logs")
-                self.logs = []
-            elif msg == "!help":
+            if msg == "!help":
                 self.send_message("#" + channel, "!remember KEY>VALUE")
                 self.send_message("#" + channel, "!forget KEY")
                # self.send_message("#" + channel, "!history")
-                self.send_message("#" + channel, "!histlast NUM")
-                self.send_message("#" + channel, "!log")
-                self.send_message("#" + channel, "!pauselog")
-                self.send_message("#" + channel, "!destroylog")
                 self.send_message("#" + channel, "!help")
                 self.send_message("#" + channel, "!help COMMAND")
             #elif msg=="!backup":
