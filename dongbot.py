@@ -81,8 +81,8 @@ class IRCBot:
             msg = chan_message.groups()[2].strip()
             rem_object = REMEMBER_OBJ.search(msg)
             for_object = FORGET_OBJ.search(msg)
-			slog_object = SLOG_OBJ.search(msg)
-			dlog_object = DLOG_OBJ.search(msg)
+            slog_object = SLOG_OBJ.search(msg)
+            dlog_object = DLOG_OBJ.search(msg)
 
             if msg == "!help":
                 self.send_message("#" + channel, "!remember KEY>VALUE")
@@ -95,21 +95,21 @@ class IRCBot:
             #elif msg=="!backup":
             #    pickle.dump(self.remembered, open(REMEMBER_BACKUP, 'wb'))
             #    self.send_message("#" + channel, "words backed up.")
-			elif msg == "!tlog":
-				today = datetime.date.today()
-				url = LOG_BASE_URL + "irc-" + today.strftime('%Y-%m-%d') + LOG_SUFFIX
-				self.send_message("#" + channel, url);
-			elif msg == "!ylog":
-				yesterday = datetime.date.today() - datetime.timedelta(1)
-				url = LOG_BASE_URL + "irc-" + yesterday.strftime('%Y-%m-%d') + LOG_SUFFIX
-				self.send_message("#" + channel, url);
+            elif msg == "!tlog":
+                today = datetime.date.today()
+                url = LOG_BASE_URL + "irc-" + today.strftime('%Y-%m-%d') + LOG_SUFFIX
+                self.send_message("#" + channel, url);
+            elif msg == "!ylog":
+                yesterday = datetime.date.today() - datetime.timedelta(1)
+                url = LOG_BASE_URL + "irc-" + yesterday.strftime('%Y-%m-%d') + LOG_SUFFIX
+                self.send_message("#" + channel, url);
             elif msg.startswith('!help'):
                 commands = {"remember":"remembers a KEY so that whenever it is said, VALUE is replied.",
                             "forget":"forgets a KEY that had been remembered.",
-							"slog":"searches logs for QUERY, returns URL"
-							"dlog":"returns log on date MMDDYY"
-							"tlog":"returns today's log"
-							"ylog":"returns yesterday's log"
+                            "slog":"searches logs for QUERY, returns URL",
+                            "dlog":"returns log on date MMDDYY",
+                            "tlog":"returns today's log",
+                            "ylog":"returns yesterday's log",
                             "help":"gives help"}
                 cmd = msg[5:].strip()
                 if cmd[0] == "!":
@@ -133,14 +133,15 @@ class IRCBot:
                 pickle.dump(self.remembered, open(REMEMBER_BACKUP, 'wb'))
                 self.send_action("#" + channel, "forgot \"%s\"" %
                              (groups[0].strip(),))
-			elif slog_object:
-				groups = slog_object.groups()
-				query = groups[0].strip()
-				print 'query is ' + query
-			elif dlog_object:
-				groups = dlog_object.groups()
-				datestring = groups[0].strip()
-				print 'datestring is ' + datestring
+            elif slog_object:
+                groups = slog_object.groups()
+                query = groups[0].strip()
+                url = LOG_BASE_URL + "index.php?q=" + query
+                self.send_message("#" + channel, url)
+            elif dlog_object:
+                groups = dlog_object.groups()
+                datestring = groups[0].strip()
+                print 'datestring is ' + datestring
             else:
                 for key in self.remembered:
                     if re.search('\\b' + re.escape(key) + '\\b', msg):
