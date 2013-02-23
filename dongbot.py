@@ -16,7 +16,7 @@ SLOG_OBJ = re.compile(r"!slog (.*)")
 DLOG_OBJ = re.compile(r"!dlog (.*)")
 LOG_BASE_URL = "http://esm41.com/irc_logs/"
 LOG_SUFFIX = ".log"
-ER_OBJ = re.compile(r"\b(.*?)ers?\b", re.I)
+ER_OBJ = re.compile(r"\b([a-zA-Z]+)ers?\b", re.I)
 CHAN_MESSAGE = re.compile(r":(\w+)!.*PRIVMSG #(\w+) :(.*)")
 
 class IRCBot:
