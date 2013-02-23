@@ -1,5 +1,6 @@
 import socket
 import threading
+import random
 import re
 import pickle
 import os.path
@@ -8,12 +9,14 @@ import datetime
 IRC_PORT = 6667
 SERVER = 'esm41.com'
 REMEMBER_BACKUP = "remember_dict.bkp"
+ER_BACKUP = "er_list.bkp"
 REMEMBER_OBJ = re.compile(r"!remember (.*)>(.*)")
 FORGET_OBJ = re.compile(r"!forget (.*)")
 SLOG_OBJ = re.compile(r"!slog (.*)")
 DLOG_OBJ = re.compile(r"!dlog (.*)")
 LOG_BASE_URL = "http://esm41.com/irc_logs/"
 LOG_SUFFIX = ".log"
+ER_OBJ = re.compile(r"\b(.*?)ers?\b", re.I)
 CHAN_MESSAGE = re.compile(r":(\w+)!.*PRIVMSG #(\w+) :(.*)")
 
 class IRCBot:
@@ -36,6 +39,11 @@ class IRCBot:
             self.remembered = pickle.load(open(REMEMBER_BACKUP, 'rb'))
         else:
             self.remembered = {}
+        # same for ers
+        if os.path.isfile(ER_BACKUP):
+            self.erred = pickle.load(open(ER_BACKUP, 'rb'))
+        else:
+            self.erred = []
 
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -83,6 +91,7 @@ class IRCBot:
             for_object = FORGET_OBJ.search(msg)
             slog_object = SLOG_OBJ.search(msg)
             dlog_object = DLOG_OBJ.search(msg)
+            er_object = ER_OBJ.search(msg)
 
             if msg == "!help":
                 self.send_message("#" + channel, "!remember KEY>VALUE")
@@ -142,6 +151,17 @@ class IRCBot:
                 groups = dlog_object.groups()
                 datestring = groups[0].strip()
                 print 'datestring is ' + datestring
+            elif er_object:
+                er = er_object.group(1).lower()
+                if er in self.erred:
+                    pass
+                else:
+                    if random.randint(0, 3):
+                        self.send_message("#" + channel, er + " 'er? i hardly know 'er!")
+                    else:
+                        self.send_message("#" + channel, er + " 'er? nearly killed 'er!")
+                    self.erred.append(er)
+                    pickle.dump(self.erred, open(ER_BACKUP, 'wb'))
             else:
                 for key in self.remembered:
                     if re.search('\\b' + re.escape(key) + '\\b', msg):
